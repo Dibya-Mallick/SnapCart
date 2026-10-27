@@ -114,7 +114,7 @@ flowchart TD
     A[Draft products from Step 1] --> B[Merchant edits catalog]
     B --> C[PATCH product]
     C --> D[Store-scoped validation]
-    D --> E[POST /stores/{slug}/publish]
+    D --> E["POST /stores/{slug}/publish"]
     E --> F{All active rows valid
     and reviewed?}
     F -- No --> G[HTTP 422 with
@@ -143,10 +143,10 @@ The catalog is ordered by category and then product ID to keep storefront render
 
 ```mermaid
 flowchart TD
-    A[Customer requests /stores/{slug}] --> B{Store exists and is published?}
+    A["Customer requests /stores/{slug}"] --> B{Store exists and is published?}
     B -- No --> C[HTTP 404]
     B -- Yes --> D[Return public store metadata]
-    D --> E[GET /stores/{slug}/catalog]
+    D --> E["GET /stores/{slug}/catalog"]
     E --> F[Select active products with prices]
     F --> G[Remove internal review and source fields]
     G --> H[Return storefront-safe catalog]
