@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import struct
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from pathlib import Path
@@ -86,7 +87,10 @@ def _price_to_minor(price: str | None) -> int | None:
     if price is None:
         return None
     try:
-        amount = Decimal(price).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        numeric_value = re.search(r"\d+(?:[.,]\d{1,2})?", price.replace(",", ""))
+        if not numeric_value:
+            return None
+        amount = Decimal(numeric_value.group()).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
     except (InvalidOperation, ValueError):
         return None
     return int(amount * 100) if amount > 0 else None
@@ -115,6 +119,12 @@ async def upload_and_extract(
 
     try:
         result = extract_menu(image_path, settings.vision_provider, extraction.model_name)
+        # A new extraction replaces the store's current active draft catalog.
+        # Older rows remain as inactive history and cannot block publishing.
+        db.query(Product).filter(Product.store_id == store.id, Product.is_active.is_(True)).update(
+            {Product.is_active: False}, synchronize_session=False
+        )
+        store.status = "draft"
         created_products: list[Product] = []
         for item in result.items:
             price_minor = _price_to_minor(item.price)

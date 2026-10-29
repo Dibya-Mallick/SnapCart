@@ -42,7 +42,13 @@ def get_summary(db: Session = Depends(get_db), store_slug: str = Query("rinas-st
 @router.get("/catalog", response_model=list[ProductResponse])
 def get_catalog(db: Session = Depends(get_db), store_slug: str = Query("rinas-stall")) -> list[Product]:
     store = get_store_or_404(db, store_slug)
-    return list(db.scalars(select(Product).where(Product.store_id == store.id).order_by(Product.id)))
+    return list(
+        db.scalars(
+            select(Product)
+            .where(Product.store_id == store.id, Product.is_active.is_(True))
+            .order_by(Product.id)
+        )
+    )
 
 
 @router.patch("/catalog/{product_id}", response_model=ProductResponse)
@@ -60,6 +66,24 @@ def update_catalog_product(
         setattr(product, field, value)
     if product.price_minor is None:
         product.ai_needs_review = True
+    db.commit()
+    db.refresh(product)
+    return product
+
+
+@router.delete("/catalog/{product_id}", response_model=ProductResponse)
+def archive_catalog_product(
+    product_id: int,
+    db: Session = Depends(get_db),
+    store_slug: str = Query("rinas-stall"),
+) -> Product:
+    store = get_store_or_404(db, store_slug)
+    product = db.scalar(select(Product).where(Product.id == product_id, Product.store_id == store.id))
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    product.is_active = False
+    if store.status == "published":
+        store.status = "draft"
     db.commit()
     db.refresh(product)
     return product

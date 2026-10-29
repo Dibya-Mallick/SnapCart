@@ -31,3 +31,8 @@ class PendingOrderResponse(BaseModel):
     subtotal_minor: int
     total_minor: int
     items: list[OrderItemResponse]
+
+
+class OrderDetailResponse(PendingOrderResponse):
+    paypal_order_id: str | None
+    paypal_capture_id: str | None
