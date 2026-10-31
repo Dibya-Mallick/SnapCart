@@ -3,9 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Bot, CircleDollarSign, ExternalLink, Package, Plus, ShoppingBag, Store } from "lucide-react";
-import { apiFetch, DashboardSummary, DEMO_STORE_SLUG, LedgerOrder, money, Product, timeAgo } from "../../lib/api";
+import { apiFetch, DashboardSummary, DEMO_STORE_SLUG, LedgerOrder, money, Product, productEmoji, timeAgo } from "../../lib/api";
 import { useLiveData } from "../../lib/useLiveData";
-import { CatalogReviewGrid } from "../../components/catalog/CatalogReviewGrid";
 import { SourcePill, statusTone, useFreshIds } from "../../components/dashboard/OrdersLedgerGrid";
 
 function greeting() {
@@ -19,7 +18,6 @@ export default function DashboardPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [hello, setHello] = useState("Welcome back");
   const fresh = useFreshIds(orders);
-  // The catalog is fetched once: polling it would overwrite in-progress edits in the grid.
   useEffect(() => { apiFetch<Product[]>("/api/v1/dashboard/catalog").then(setProducts).catch(() => undefined); setHello(greeting()); }, []);
 
   const list = orders || [];
@@ -37,7 +35,7 @@ export default function DashboardPage() {
       <div className="metric-card"><span className={`metric-status${live ? "" : " draft"}`}><i /> {summary?.store_status || "…"}</span><span className="metric-icon blue"><ShoppingBag size={19} /></span><small>Orders today</small>{summary ? <strong>{summary.orders_today}</strong> : <div className="skeleton metric-skeleton" />}<span className="metric-note">{summary ? `${summary.pending_orders} awaiting payment` : " "}</span></div>
     </div>
     <div className="dashboard-columns">
-      <section><div className="section-row"><div><h2>Catalog workspace</h2><p className="muted">Approve AI-extracted items before they go live.</p></div><Link className="text-link" href="/dashboard/catalog/latest/review">Review & publish <ArrowRight size={15} /></Link></div><CatalogReviewGrid initialProducts={products} /></section>
+      <section><div className="section-row"><div><h2>Live catalog</h2><p className="muted">{products.length} active items · AI-extracted, merchant-approved</p></div></div><div className="data-card catalog-snapshot">{!products.length && [0, 1, 2, 3].map((key) => <div className="snapshot-row" key={key}><div className="skeleton" style={{ height: 16, width: "100%" }} /></div>)}{products.map((product) => <div className="snapshot-row" key={product.id}><span className="snapshot-art" aria-hidden="true">{productEmoji(product)}</span><div className="snapshot-name"><strong>{product.name}</strong><small>{product.category}{product.dietary_tags.length ? ` · ${product.dietary_tags.join(", ")}` : ""}</small></div><strong className="snapshot-price">{money(product.price_minor, product.currency)}</strong>{!product.price_minor || product.ai_needs_review ? <span className="status-pill warning">Needs review</span> : <span className="status-pill success">Approved</span>}</div>)}<Link className="snapshot-footer" href="/dashboard/catalog/latest/review">Edit prices & publish <ArrowRight size={15} /></Link></div></section>
       <section><div className="section-row"><div><h2>Live activity</h2><p className="muted"><span className="online-dot" /> Updates every few seconds</p></div><Link className="text-link" href="/dashboard/orders">All orders <ArrowRight size={15} /></Link></div>
         <div className="data-card activity-feed">{!orders && [0, 1, 2].map((key) => <div className="activity-row" key={key}><div className="skeleton" style={{ height: 14, width: "100%" }} /></div>)}{list.slice(0, 6).map((order) => <div className={`activity-row${fresh.has(order.id) ? " fresh-row" : ""}`} key={order.id}><div><strong>Order #{order.id}</strong><small>{timeAgo(order.created_at)}</small></div><SourcePill source={order.source} /><span className={`status-pill ${statusTone(order.status)}`}>{order.status}</span><strong className="activity-amount">{money(order.total_minor, order.currency)}</strong></div>)}{orders && !list.length && <div className="empty-state">No orders yet. <Link className="text-link" href={`/store/${DEMO_STORE_SLUG}`}>Open the store</Link> and place one.</div>}</div>
       </section>

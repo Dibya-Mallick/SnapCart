@@ -194,3 +194,139 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
 @media (max-width: 560px) { .demo-flow { padding: 8px 15px; }.demo-flow-label, .demo-flow li:not(.active) .demo-flow-text { display: none; }.publish-bar { flex-direction: column; align-items: stretch; }.table-toolbar { flex-direction: column; align-items: flex-start; gap: 10px; }.activity-row { flex-wrap: wrap; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
 @media (max-width: 850px) { .empty-cart { min-height: 90px; flex-direction: row; flex-wrap: wrap; gap: 8px; text-align: left; } .empty-cart small { flex-basis: 100%; text-align: center; } }
+
+/* ---- Layout width & type scale (overrides the compact defaults above) ---- */
+body { font-size: 16px; }
+.app-shell { width: min(1280px, calc(100% - 48px)); }
+.store-nav, .store-hero, .store-layout { width: min(1280px, calc(100% - 48px)); }
+.demo-flow { padding-left: max(24px, calc((100% - 1280px) / 2)); padding-right: max(24px, calc((100% - 1280px) / 2)); font-size: 13px; }
+.demo-flow-label { font-size: 11px; }
+.demo-flow-index { width: 20px; height: 20px; font-size: 11px; }
+.app-nav nav { font-size: 14px; }
+.page-heading { padding: 36px 0 24px; }
+.page-heading h1, .narrow-page h1 { font-size: clamp(34px, 4.4vw, 48px); }
+.muted { font-size: 15px; }
+.lead { font-size: 18px; }
+.eyebrow { font-size: 12px; }
+.section-row { margin: 34px 0 14px; }
+.section-row h2 { font-size: 24px; }
+.text-link { font-size: 15px; }
+.secondary-button { font-size: 14px; }
+.notice, .error-box, .success-box { font-size: 14px; }
+
+/* Metrics */
+.metric-grid { gap: 16px; }
+.metric-card { min-height: 0; padding: 22px; }
+.metric-card small { margin-top: 16px; font-size: 12px; }
+.metric-card strong { font-size: 32px; }
+.metric-note { font-size: 13px; }
+.metric-status { font-size: 11px; }
+
+/* Tables: shrink to fit instead of scrolling sideways (scroll only on narrow phones) */
+.data-table { min-width: 0; font-size: 14px; }
+.data-table th { padding: 13px 16px; font-size: 11.5px; }
+.data-table td { padding: 14px 16px; }
+.data-table td:first-child { min-width: 0; width: 30%; }
+.data-table td small { font-size: 12px; }
+.data-table input { padding: 9px 10px; font-size: 14px; }
+.price-input { min-width: 0; max-width: 110px; }
+.row-actions { white-space: nowrap; }
+.table-toolbar { padding: 18px 22px; }
+.table-toolbar strong { font-size: 17px; }
+.table-toolbar .muted { font-size: 13px; }
+.review-count { font-size: 14px; }
+.tag { padding: 4px 9px; font-size: 12px; }
+.status-pill, .source-pill { padding: 5px 10px; font-size: 12px; }
+.small-button { padding: 9px 13px; font-size: 13px; }
+.delete-button { font-size: 13px; }
+.mono { font-size: 12.5px; }
+.filter-tabs button { padding: 7px 12px; font-size: 13px; }
+.empty-state { font-size: 15px; }
+@media (max-width: 700px) { .data-table { min-width: 680px; } }
+
+/* Dashboard */
+.dashboard-columns { grid-template-columns: minmax(0, 1.25fr) minmax(320px, 1fr); gap: 24px; }
+.catalog-snapshot, .activity-feed { display: flex; flex-direction: column; }
+.snapshot-row { display: flex; align-items: center; gap: 14px; padding: 14px 20px; border-top: 1px solid #edf1f5; }
+.snapshot-row:first-child { border-top: 0; }
+.snapshot-art { display: grid; flex: 0 0 44px; place-items: center; height: 44px; border-radius: 10px; background: #fff3d9; font-size: 22px; }
+.snapshot-row:nth-child(2n) .snapshot-art { background: #e7f6ec; }
+.snapshot-name { flex: 1; min-width: 0; }
+.snapshot-name strong { display: block; color: #172b4d; font-size: 15px; }
+.snapshot-name small { display: block; margin-top: 3px; overflow: hidden; color: #7d8ba0; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+.snapshot-price { min-width: 64px; color: #003087; font-size: 15px; text-align: right; }
+.snapshot-footer { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 14px; border-top: 1px solid #edf1f5; color: #0070ba; background: #fafcff; font-size: 14px; font-weight: 700; }
+.snapshot-footer:hover { background: #f0f7ff; }
+.activity-row { gap: 12px; padding: 14px 20px; font-size: 14px; }
+.activity-row strong { font-size: 15px; }
+.activity-row small { font-size: 12px; }
+.activity-feed .empty-state { padding: 34px 20px !important; }
+
+/* Storefront */
+.store-hero { min-height: 220px; padding: 40px 48px; }
+.store-hero h1 { font-size: 48px; }
+.store-hero p { max-width: 520px; font-size: 16px; }
+.hero-pills span { font-size: 12.5px; }
+.store-layout { grid-template-columns: minmax(0, 1.4fr) minmax(360px, .6fr); gap: 28px; margin-top: 30px; }
+.store-section-title h2 { font-size: 28px; }
+.store-section-title > span { font-size: 14px; }
+.category-heading { margin: 24px 0 12px; font-size: 16px; }
+.category-heading small { font-size: 13px; }
+.product-grid { gap: 14px; }
+.product-card { gap: 16px; padding: 16px; border-radius: 12px; }
+.product-art { flex-basis: 76px; height: 76px; border-radius: 12px; font-size: 36px; }
+.product-info h3 { font-size: 17px; }
+.product-info p { min-height: 0; font-size: 14px; }
+.product-buy strong { font-size: 16px; }
+.cart-card, .agent-card { padding: 22px; }
+.card-title { font-size: 16px; }
+.card-title span:last-child { font-size: 13px; }
+.cart-row strong { font-size: 15px; }
+.cart-row small { font-size: 12.5px; }
+.line-total { font-size: 15px; }
+.quantity-control button { width: 28px; height: 28px; font-size: 15px; }
+.quantity-control span { font-size: 15px; }
+.cart-total { font-size: 14px; }
+.cart-total strong { font-size: 24px; }
+.wide-button { font-size: 15px; }
+.empty-cart span { font-size: 15px; }
+.empty-cart small { font-size: 13px; }
+.order-badge { font-size: 13px; }
+.trust-note { font-size: 13px; }
+.payment-placeholder { font-size: 13px; }
+.receipt-title { font-size: 21px; }
+.receipt-meta { font-size: 13px; }
+.agent-card-title strong { font-size: 15px; }
+.agent-card-title small { font-size: 12.5px; }
+.agent-avatar { width: 34px; height: 34px; }
+.chat-body { max-height: 380px; }
+.chat-message { padding: 11px 13px; font-size: 14px; }
+.tool-steps li { padding: 7px 10px; font-size: 12.5px; }
+.suggestions button { padding: 7px 10px; font-size: 12.5px; }
+.chat-form input { padding: 12px; font-size: 14px; }
+.chat-form .primary-button { padding: 0 14px; }
+
+/* Upload & review */
+.narrow-page { max-width: 820px; padding: 48px 0; }
+.dropzone strong { font-size: 18px; }
+.dropzone span { font-size: 13px; }
+.stage-list li { font-size: 14px; }
+.result-card strong { font-size: 17px; }
+.result-card .muted { font-size: 14px; }
+.extracted-list li { padding: 13px 18px; font-size: 15px; }
+.publish-progress strong { font-size: 18px; }
+.publish-progress .muted { font-size: 14px; }
+.progress-track { height: 8px; }
+.publish-bar { padding: 22px 24px; }
+
+@media (max-width: 560px) { .app-shell, .store-nav, .store-hero, .store-layout { width: min(100% - 30px, 1280px); }.store-hero { padding: 28px 23px; }.store-hero h1 { font-size: 34px; }.store-layout { grid-template-columns: 1fr; }.metric-card strong { font-size: 24px; }.snapshot-row, .activity-row { padding: 12px 14px; } }
+@media (max-width: 850px) { .store-layout { grid-template-columns: 1fr; } }
+.page-heading h1 { max-width: none; }
+.category-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.category-chips button { display: inline-flex; align-items: center; gap: 7px; padding: 9px 15px; border: 1px solid #dce4ee; border-radius: 22px; color: #3f526d; background: #fff; cursor: pointer; font-size: 14px; font-weight: 600; transition: border-color .15s ease, background .15s ease; }
+.category-chips button span { color: #93a0b2; font-size: 12px; }
+.category-chips button:hover { border-color: #0070ba; }
+.category-chips button.active { border-color: var(--navy); color: #fff; background: var(--navy); }
+.category-chips button.active span { color: #c9d8f0; }
+.product-category { display: block; margin-bottom: 3px; color: #0070ba; font-size: 11px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; }
+.product-card { animation: rise .2s ease; }
