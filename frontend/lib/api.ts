@@ -18,7 +18,7 @@ export type CartItem = Product & { quantity: number };
 export type OrderLine = { product_id: number; product_name: string; unit_price_minor: number; quantity: number; line_total_minor: number };
 export type PendingOrder = { local_order_id: number; store_slug: string; source: string; status: string; currency: string; subtotal_minor: number; total_minor: number; items: OrderLine[] };
 export type AgentToolCall = { name: string; arguments: Record<string, unknown>; result: Record<string, unknown> };
-export type AgentReply = { status: "cart_prepared" | "needs_clarification"; message: string; tool_calls: AgentToolCall[]; order: PendingOrder | null };
+export type AgentReply = { status: "cart_prepared" | "needs_clarification"; message: string; tool_calls: AgentToolCall[]; order: PendingOrder | null; planner: string };
 export type DashboardSummary = { store_name: string; store_slug: string; store_status: string; catalog_items: number; items_needing_review: number; orders_today: number; paid_orders: number; pending_orders: number; total_payment_volume_minor: number; currency: string };
 export type LedgerOrder = { id: number; source: string; status: string; currency: string; total_minor: number; paypal_capture_id: string | null; created_at: string };
 

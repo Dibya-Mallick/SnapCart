@@ -2,20 +2,38 @@
 
 from __future__ import annotations
 
+import logging
 import re
 from collections import Counter, defaultdict
+from dataclasses import dataclass
 from decimal import Decimal
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.models import Order, Product, Store
 from app.schemas.agent import AgentToolCall
 from app.schemas.orders import CartItemInput, PendingOrderResponse
 from app.schemas.storefront import PublicProductResponse
+from app.services.groq_client import LLMError
 from app.services.order_service import create_validated_order
+
+logger = logging.getLogger(__name__)
+
+RULES_PLANNER = "rules"
+
+
+@dataclass(frozen=True)
+class AgentOutcome:
+    status: Literal["cart_prepared", "needs_clarification"]
+    message: str
+    tool_calls: list[AgentToolCall]
+    order: PendingOrderResponse | None
+    # Which planner produced the reply, e.g. "rules" or "groq:qwen/qwen3.8-27b".
+    planner: str
 
 NUMBER_WORDS = {
     "a": 1,
@@ -115,13 +133,30 @@ class ShoppingAgentService:
         }
 
     def orchestrate_message(
-        self, db: Session, store_slug: str, message: str
-    ) -> tuple[str, str, list[AgentToolCall], PendingOrderResponse | None]:
-        """Run a bounded local orchestration loop.
+        self,
+        db: Session,
+        store_slug: str,
+        message: str,
+        history: list[dict[str, str]] | None = None,
+    ) -> AgentOutcome:
+        """Plan a reply with the configured LLM, falling back to deterministic rules.
 
-        This deterministic provider keeps the tool contract usable without an AI key.
-        A model-backed planner can later call these same three methods.
+        Both planners can only call the three bounded tools above, so neither can
+        set prices or move money; the shopper still approves payment in PayPal.
         """
+        published_store(db, store_slug)
+        if settings.llm_provider.strip().lower() == "groq" and settings.groq_enabled:
+            # Imported here to avoid a circular import: the LLM planner uses this service.
+            from app.services.llm_shopping_agent import run_llm_agent
+
+            try:
+                return run_llm_agent(self, db, store_slug, message, history or [])
+            except LLMError:
+                logger.exception("LLM shopping agent failed; falling back to rule-based planner")
+        return self._orchestrate_with_rules(db, store_slug, message)
+
+    def _orchestrate_with_rules(self, db: Session, store_slug: str, message: str) -> AgentOutcome:
+        """Deterministic keyword planner that keeps the agent usable without an AI key."""
         catalog = self.list_store_catalog(db, store_slug)
         catalog_result = {"store_slug": store_slug, "products": [item.model_dump() for item in catalog]}
         tool_calls = [
@@ -133,11 +168,12 @@ class ShoppingAgentService:
         ]
         selected = _select_items(message, catalog)
         if not selected:
-            return (
-                "needs_clarification",
-                "I could not match that request to the published menu. Please name an item, category, or dietary preference.",
-                tool_calls,
-                None,
+            return AgentOutcome(
+                status="needs_clarification",
+                message="I could not match that request to the published menu. Please name an item, category, or dietary preference.",
+                tool_calls=tool_calls,
+                order=None,
+                planner=RULES_PLANNER,
             )
 
         items = [
@@ -153,15 +189,16 @@ class ShoppingAgentService:
             )
         )
         item_summary = ", ".join(f"{item.quantity}× {item.product_name}" for item in order.items)
-        return (
-            "cart_prepared",
-            (
+        return AgentOutcome(
+            status="cart_prepared",
+            message=(
                 f"I prepared a pending order for {item_summary}. The server-calculated total is "
                 f"{order.currency} {Decimal(order.total_minor) / Decimal(100):.2f}. "
                 "Please review and approve payment."
             ),
-            tool_calls,
-            order,
+            tool_calls=tool_calls,
+            order=order,
+            planner=RULES_PLANNER,
         )
 
 

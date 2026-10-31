@@ -3,17 +3,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { Bot, Check, Lock, Pencil, ReceiptText, ShieldCheck, ShoppingBag, Store } from "lucide-react";
+import { Bot, Lock, Pencil, ShieldCheck, ShoppingBag, Store } from "lucide-react";
 import { apiFetch, CartItem, money, PendingOrder, Product } from "../../../lib/api";
 import { PayPalCheckoutButton } from "../../../components/checkout/PayPalCheckoutButton";
+import { OrderLines, PaymentReceipt } from "../../../components/checkout/OrderSummary";
 import { AgentShoppingChat } from "../../../components/storefront/AgentShoppingChat";
 import { ProductList, ProductListSkeleton } from "../../../components/storefront/ProductList";
 
 type Receipt = { order: PendingOrder; captureId: string };
-
-function OrderLines({ order }: { order: PendingOrder }) {
-  return <>{order.items.map((item) => <div className="cart-row" key={item.product_id}><div><strong>{item.quantity}× {item.product_name}</strong><small>{money(item.unit_price_minor, order.currency)} each</small></div><span className="line-total">{money(item.line_total_minor, order.currency)}</span></div>)}<div className="cart-total"><span>Total</span><strong>{money(order.total_minor, order.currency)}</strong></div></>;
-}
 
 export default function StorePage() {
   const { slug } = useParams<{ slug: string }>();
@@ -68,7 +65,7 @@ export default function StorePage() {
 
   let cartContent: React.ReactNode;
   if (receipt) {
-    cartContent = <div className="receipt"><span className="success-icon"><Check size={22} /></span><strong className="receipt-title">Payment captured</strong><p className="muted">PayPal approved the payment and the server verified the captured amount.</p><div className="receipt-lines"><OrderLines order={receipt.order} /></div><dl className="receipt-meta"><div><dt>Order</dt><dd>#{receipt.order.local_order_id}</dd></div><div><dt>PayPal capture</dt><dd className="mono">{receipt.captureId}</dd></div></dl><button className="primary-button wide-button" onClick={resetCheckout}>Start a new order</button><Link className="text-link center-link" href="/dashboard/orders"><ReceiptText size={14} /> See it in the merchant ledger</Link></div>;
+    cartContent = <PaymentReceipt order={receipt.order} captureId={receipt.captureId} onDone={resetCheckout} />;
   } else if (order) {
     cartContent = <><div className="order-badge">{order.source === "ai_agent" ? <><Bot size={13} /> Prepared by the AI assistant</> : <><ShoppingBag size={13} /> Your cart</>} · Order #{order.local_order_id}</div><OrderLines order={order} /><p className="trust-note"><Lock size={12} /> Prices were re-checked on the server. Nothing is charged until you approve in PayPal.</p><PayPalCheckoutButton key={order.local_order_id} order={order} onPaid={handlePaid} /><button className="ghost-button" onClick={editOrder}><Pencil size={13} /> Change order</button></>;
   } else if (cart.length) {

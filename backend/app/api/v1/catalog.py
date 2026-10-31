@@ -114,7 +114,11 @@ async def upload_and_extract(
         image_path=str(image_path),
         status="processing",
         provider=settings.vision_provider,
-        model_name=settings.vision_model or "mock-menu-parser",
+        model_name=(
+            settings.groq_model
+            if settings.vision_provider.strip().lower() == "groq"
+            else settings.vision_model or "mock-menu-parser"
+        ),
     )
     db.add(extraction)
     db.commit()

@@ -49,7 +49,16 @@ def check_order_payment_status(
 
 @router.post("/chat", response_model=AgentChatResponse)
 def chat(payload: AgentChatRequest, db: Session = Depends(get_db)) -> AgentChatResponse:
-    status, message, tool_calls, order = agent_service.orchestrate_message(
-        db, payload.store_slug, payload.message
+    outcome = agent_service.orchestrate_message(
+        db,
+        payload.store_slug,
+        payload.message,
+        [turn.model_dump() for turn in payload.history],
     )
-    return AgentChatResponse(status=status, message=message, tool_calls=tool_calls, order=order)
+    return AgentChatResponse(
+        status=outcome.status,
+        message=outcome.message,
+        tool_calls=outcome.tool_calls,
+        order=outcome.order,
+        planner=outcome.planner,
+    )

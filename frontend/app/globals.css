@@ -330,3 +330,27 @@ body { font-size: 16px; }
 .category-chips button.active span { color: #c9d8f0; }
 .product-category { display: block; margin-bottom: 3px; color: #0070ba; font-size: 11px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; }
 .product-card { animation: rise .2s ease; }
+.checkout-link-card { display: flex; width: min(520px, 100%); flex-direction: column; gap: 16px; }
+.checkout-link-header { display: flex; align-items: center; gap: 14px; }
+.checkout-link-header .eyebrow { margin: 0 0 4px; }
+.checkout-link-header h1 { margin: 0; font-size: 28px; letter-spacing: -1px; }
+.checkout-link-page .cart-card { box-shadow: 0 15px 45px #00308712; }
+.tool-steps li.failed { border-color: #f2d1ca; color: #9b3d31; background: #fff6f4; }
+.planner-badge { display: flex; align-items: center; gap: 5px; margin: -2px 0 8px; color: #7d8ba0; font-size: 11.5px; }
+.grid-wrap { width: 100%; }
+.grid-wrap .ag-cell { display: flex; align-items: center; }
+.grid-wrap .ag-row-pinned { font-weight: 700; background: #f6f9fd; }
+.grid-money { font-weight: 700; color: #172b4d; justify-content: flex-end; }
+.ag-row.fresh-row { animation: flash 3s ease; }
+.ledger-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.grid-search { min-width: 220px; padding: 8px 12px; border: 1px solid #dce4ee; border-radius: 20px; font: inherit; font-size: 13px; }
+.grid-search:focus { outline: 2px solid #b9dcff; border-color: #0070ba; }
+.grid-name { display: flex; flex-direction: column; gap: 4px; padding: 10px 0; line-height: 1.3; white-space: normal; }
+.grid-name strong { color: #172b4d; font-size: 14.5px; }
+.grid-name small { color: #7d8ba0; font-size: 12px; }
+.ag-row.grid-needs-review { background: #fffbf0; }
+.grid-missing { color: #956b00; font-style: italic; }
+.table-toolbar .muted svg { vertical-align: -1px; }
+.grid-wrap .ag-cell { line-height: 1.4; }
+.grid-wrap .ag-cell-value { display: flex; align-items: center; min-width: 0; }
+.grid-wrap .tag-list { padding: 6px 0; }
