@@ -93,3 +93,16 @@ def test_agent_category_request_uses_catalog_categories() -> None:
     body = response.json()
     assert body["status"] == "cart_prepared"
     assert [item["product_name"] for item in body["order"]["items"]] == ["Mango Lassi"]
+
+
+def test_agent_matches_product_by_its_head_noun() -> None:
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/v1/agent/chat",
+            json={"store_slug": "rinas-stall", "message": "Two samosas and a mango lassi"},
+        )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "cart_prepared"
+    quantities = {item["product_name"]: item["quantity"] for item in body["order"]["items"]}
+    assert quantities == {"Vegetable Samosa": 2, "Mango Lassi": 1}

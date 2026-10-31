@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from collections import defaultdict
+from collections import Counter, defaultdict
 from decimal import Decimal
 from typing import Any
 
@@ -187,6 +187,11 @@ def _name_matches(product_name: str, message: str) -> bool:
     return all(word in message_words for word in name_words)
 
 
+def _head_word(product_name: str) -> str:
+    words = re.findall(r"[a-z]+", product_name.split("(", 1)[0].lower())
+    return _singular(words[-1]) if words else ""
+
+
 def _quantity_before(message: str, anchor: str) -> int:
     words = re.findall(r"[a-z]+|\d+", message.lower())
     core_anchor = anchor.split("(", 1)[0]
@@ -205,9 +210,16 @@ def _select_items(message: str, catalog: list[PublicProductResponse]) -> dict[in
     lower_message = message.lower()
     selected: dict[int, int] = defaultdict(int)
 
+    # Shoppers often use just the head noun ("two samosas" for "Vegetable Samosa"), so fall
+    # back to a product's last name word when no other product shares it.
+    head_counts = Counter(_head_word(product.name) for product in catalog)
+    message_tokens = {_singular(word) for word in re.findall(r"[a-z]+", lower_message)}
     for product in catalog:
+        head = _head_word(product.name)
         if _name_matches(product.name, lower_message):
             selected[product.id] += _quantity_before(lower_message, product.name)
+        elif head and head_counts[head] == 1 and head in message_tokens:
+            selected[product.id] += _quantity_before(lower_message, head)
 
     requested_tags = [
         tag
