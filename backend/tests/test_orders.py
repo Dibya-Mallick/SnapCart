@@ -60,3 +60,24 @@ def test_order_stores_product_price_and_name_snapshots() -> None:
         assert len(order.items) == 1
         assert order.items[0].product_name_snapshot == products[0]["name"]
         assert order.items[0].unit_price_minor_snapshot == products[0]["price_minor"]
+
+
+def test_duplicate_cart_lines_are_merged_into_one_order_item() -> None:
+    with TestClient(app) as client:
+        products = client.get("/api/v1/stores/rinas-stall/catalog").json()["products"]
+        product = products[0]
+        response = client.post(
+            "/api/v1/orders",
+            json={
+                "store_slug": "rinas-stall",
+                "items": [
+                    {"product_id": product["id"], "quantity": 2},
+                    {"product_id": product["id"], "quantity": 3},
+                ],
+            },
+        )
+    assert response.status_code == 201
+    body = response.json()
+    assert len(body["items"]) == 1
+    assert body["items"][0]["quantity"] == 5
+    assert body["total_minor"] == product["price_minor"] * 5

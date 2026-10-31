@@ -33,7 +33,7 @@ NUMBER_WORDS = {
 }
 
 
-def _published_store(db: Session, store_slug: str) -> Store:
+def published_store(db: Session, store_slug: str) -> Store:
     store = db.scalar(select(Store).where(Store.slug == store_slug, Store.status == "published"))
     if not store:
         raise HTTPException(status_code=404, detail="Store not found")
@@ -84,7 +84,7 @@ class ShoppingAgentService:
     """Expose only catalog lookup, cart preparation, and payment-status tools."""
 
     def list_store_catalog(self, db: Session, store_slug: str) -> list[PublicProductResponse]:
-        store = _published_store(db, store_slug)
+        store = published_store(db, store_slug)
         return [_product_response(product) for product in _public_products(db, store)]
 
     def build_validated_cart(
@@ -93,14 +93,14 @@ class ShoppingAgentService:
         store_slug: str,
         items: list[CartItemInput],
     ) -> PendingOrderResponse:
-        store = _published_store(db, store_slug)
+        store = published_store(db, store_slug)
         order = create_validated_order(db, store, items, source="ai_agent")
         return _order_response(order, store.slug)
 
     def check_order_payment_status(
         self, db: Session, store_slug: str, local_order_id: int
     ) -> dict[str, Any]:
-        store = _published_store(db, store_slug)
+        store = published_store(db, store_slug)
         order = db.scalar(
             select(Order).where(Order.id == local_order_id, Order.store_id == store.id)
         )
@@ -167,11 +167,15 @@ class ShoppingAgentService:
 
 def _singular(token: str) -> str:
     token = token.lower().strip(".,!?;:")
-    if token.endswith("ies"):
+    if len(token) <= 3:
+        return token
+    if token.endswith("ies") and len(token) > 4:  # berries -> berry, but pies -> pie
         return token[:-3] + "y"
-    if token.endswith("es"):
+    # "-es" is only a plural suffix after sibilants or "o" (dishes, mangoes);
+    # elsewhere it belongs to the stem (bites -> bite, not bit).
+    if token.endswith(("sses", "xes", "zes", "ches", "shes", "oes")):
         return token[:-2]
-    if token.endswith("s"):
+    if token.endswith("s") and not token.endswith(("ss", "us")):
         return token[:-1]
     return token
 
@@ -210,18 +214,16 @@ def _select_items(message: str, catalog: list[PublicProductResponse]) -> dict[in
         for tag in {tag for product in catalog for tag in product.dietary_tags}
         if tag in lower_message
     ]
-    category_aliases = {
-        "snack": "snacks",
-        "snacks": "snacks",
-        "drink": "drinks",
-        "drinks": "drinks",
-        "main": "mains",
-        "mains": "mains",
-    }
-    for alias, category in category_aliases.items():
-        if not re.search(rf"\b{alias}\b", lower_message):
+    # Categories come from the live catalog, so merchant-defined ones work too.
+    message_words = {_singular(word) for word in re.findall(r"[a-z]+", lower_message)}
+    for category in sorted({product.category.lower() for product in catalog} - {"other"}):
+        alias = _singular(category)
+        if alias not in message_words:
             continue
         eligible = [product for product in catalog if product.category.lower() == category]
+        if any(product.id in selected for product in eligible):
+            # The shopper already named a specific item from this category.
+            continue
         tagged = [
             product for product in eligible if all(tag in product.dietary_tags for tag in requested_tags)
         ]

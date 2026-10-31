@@ -82,7 +82,7 @@ curl.exe -X POST http://localhost:8000/api/v1/catalog/extract `
   -F "store_slug=rinas-stall"
 ```
 
-Important configuration values are documented in `.env.example`: `UPLOAD_DIRECTORY`, `MAX_UPLOAD_BYTES`, `VISION_PROVIDER`, `VISION_API_KEY`, and `VISION_MODEL`. The default provider is `mock`; set `VISION_PROVIDER=gemini` to use the implemented Gemini structured-output adapter. The backend dependency is `google-genai`. Keep `VISION_API_KEY` in `backend/.env` and never expose it through a `NEXT_PUBLIC_*` variable.
+Important configuration values are documented in `.env.example`: `UPLOAD_DIRECTORY`, `MAX_UPLOAD_BYTES`, `VISION_PROVIDER`, `VISION_API_KEY`, `VISION_MODEL`, and `CORS_ORIGINS` (comma-separated browser origins allowed to call the API; defaults to `http://localhost:3000`). The default provider is `mock`; set `VISION_PROVIDER=gemini` to use the implemented Gemini structured-output adapter. The backend dependency is `google-genai`. Keep `VISION_API_KEY` in `backend/.env` and never expose it through a `NEXT_PUBLIC_*` variable.
 
 For a real extraction test:
 
