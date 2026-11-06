@@ -110,7 +110,7 @@ export function CatalogReviewGrid({ initialProducts, storeSlug = DEMO_STORE_SLUG
 
   const flagged = products.filter(needsReview).length;
   return <div className="data-card">
-    <div className="table-toolbar"><div><strong>Catalog review</strong><span className="muted"><Pencil size={12} /> Double-click a cell to edit · check what the AI read, then approve each row</span></div><span className={`review-count${flagged ? " warn" : ""}`}>{flagged ? `${flagged} need review` : "All items approved"}</span></div>
+    <div className="table-toolbar"><div><strong>Catalog review</strong><span className="muted"><Pencil size={12} /> Double-click a cell to edit · check what the AI read, then approve each row</span></div><span className={`review-count${flagged ? " warn" : ""}`}>{flagged ? `${flagged} ${flagged === 1 ? "needs" : "need"} review` : "All items approved"}</span></div>
     {message && <div className="notice">{message}</div>}
     <div className="grid-wrap"><AgGridReact<Product>
       ref={gridRef}

@@ -81,10 +81,12 @@ export default function StorePage() {
       <div className="store-layout">
         <section className="menu-column"><div className="store-section-title"><div><p className="eyebrow">Today’s menu</p><h2>Pick your favorites</h2></div><span>{loading ? "Loading…" : `${products.length} items`}</span></div>{loading ? <ProductListSkeleton /> : <ProductList products={products} quantities={quantities} onAdd={add} />}</section>
         <aside className="shopping-column">
-          <div className="cart-card" ref={cartRef}><div className="card-title"><span><ShoppingBag size={17} /> {receipt ? "Receipt" : order ? "Checkout" : "Your cart"}</span>{!order && !receipt && <span>{itemCount} items</span>}</div>{cartContent}{checkoutError && <div className="error-box">{checkoutError}</div>}</div>
+          <div className="cart-card" ref={cartRef}><div className="card-title"><span><ShoppingBag size={17} /> {receipt ? "Receipt" : order ? "Checkout" : "Your cart"}</span>{!order && !receipt && <span>{itemCount} {itemCount === 1 ? "item" : "items"}</span>}</div>{cartContent}{checkoutError && <div className="error-box">{checkoutError}</div>}</div>
           <div className="agent-card"><div className="agent-card-title"><span className="agent-avatar"><Bot size={16} /></span><div><strong>Shop with AI</strong><small>Limited to this store’s menu · you approve every payment</small></div><span className="online-dot" /></div><AgentShoppingChat storeSlug={slug} onOrder={handleAgentOrder} /></div>
         </aside>
       </div>
+      {/* Phones show the menu first; this bar jumps down to the cart once there is something to pay for. */}
+      {(itemCount > 0 || order) && !receipt && <button className="mobile-cart-bar" onClick={() => cartRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}><ShoppingBag size={16} /> {order ? "Review & pay with PayPal" : `View cart · ${itemCount} ${itemCount === 1 ? "item" : "items"}`}<strong>{money(order ? order.total_minor : total, currency)}</strong></button>}
     </>}
   </main>;
 }

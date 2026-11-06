@@ -76,7 +76,7 @@ export default function NewCatalogPage() {
         {error && <div className="error-box">{error}</div>}
       </form>
       {result && <div className="extraction-result">
-        <div className="result-card"><div><strong>{result.products.length} products found</strong><span className="muted">{needsReview ? `${needsReview} need a quick review before publishing` : "Everything looks ready to publish"}</span></div><Link className="primary-button" href={`/dashboard/catalog/${result.extraction_id}/review`}>Review catalog <ArrowRight size={16} /></Link></div>
+        <div className="result-card"><div><strong>{result.products.length} products found</strong><span className="muted">{needsReview ? `${needsReview} ${needsReview === 1 ? "needs" : "need"} a quick review before publishing` : "Everything looks ready to publish"}</span></div><Link className="primary-button" href={`/dashboard/catalog/${result.extraction_id}/review`}>Review catalog <ArrowRight size={16} /></Link></div>
         <ul className="extracted-list">{result.products.map((product) => <li key={product.id} className={product.needs_review ? "flagged" : ""}><span>{product.needs_review ? <AlertTriangle size={14} /> : <Check size={14} />} {product.name}</span><strong>{product.price_minor == null ? "Price unclear" : money(product.price_minor, product.currency)}</strong></li>)}</ul>
         {result.overall_warnings.map((warning) => <div className="notice" key={warning}>{warning}</div>)}
       </div>}
