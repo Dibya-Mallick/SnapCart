@@ -2,16 +2,43 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Bot, CircleDollarSign, Package, Plus, Store } from "lucide-react";
-import { apiFetch, money, Product } from "../../lib/api";
-import { CatalogReviewGrid } from "../../components/catalog/CatalogReviewGrid";
+import { ArrowRight, Bot, CircleDollarSign, ExternalLink, Package, Plus, ShoppingBag, Store } from "lucide-react";
+import { apiFetch, DashboardSummary, DEMO_STORE_SLUG, LedgerOrder, money, Product, productEmoji, timeAgo } from "../../lib/api";
+import { useLiveData } from "../../lib/useLiveData";
+import { SourcePill, statusTone, useFreshIds } from "../../components/dashboard/OrdersLedgerGrid";
 
-type Summary = { store_name: string; store_slug: string; store_status: string; catalog_items: number; items_needing_review: number; orders_today: number; paid_orders: number; pending_orders: number; total_payment_volume_minor: number; currency: string };
+function greeting() {
+  const hour = new Date().getHours();
+  return hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+}
 
 export default function DashboardPage() {
-  const [summary, setSummary] = useState<Summary | null>(null);
+  const { data: summary, error } = useLiveData<DashboardSummary>("/api/v1/dashboard/summary");
+  const { data: orders } = useLiveData<LedgerOrder[]>("/api/v1/dashboard/orders");
   const [products, setProducts] = useState<Product[]>([]);
-  const [error, setError] = useState("");
-  useEffect(() => { Promise.all([apiFetch<Summary>("/api/v1/dashboard/summary"), apiFetch<Product[]>("/api/v1/dashboard/catalog")]).then(([s, p]) => { setSummary(s); setProducts(p); }).catch((e) => setError(e.message)); }, []);
-  return <main className="app-shell"><header className="app-nav"><Link className="brand" href="/"><span className="brand-mark"><Store size={18} /></span>snap-a-store</Link><nav><Link href="/store/rinas-stall">View store</Link><Link className="nav-button" href="/dashboard/catalog/new"><Plus size={15} /> New menu</Link></nav></header><div className="page-heading"><div><p className="eyebrow">Merchant workspace</p><h1>Good morning, Rina.</h1><p className="muted">Review your catalog, publish updates, and keep an eye on orders.</p></div><Link className="secondary-button" href="/dashboard/orders">Open orders <ArrowRight size={16} /></Link></div>{error && <div className="error-box">{error}</div>}{summary && <><div className="metric-grid"><div className="metric-card"><span className="metric-icon blue"><CircleDollarSign size={19} /></span><small>Payment volume</small><strong>{money(summary.total_payment_volume_minor, summary.currency)}</strong><span className="metric-note">{summary.paid_orders} paid orders</span></div><div className="metric-card"><span className="metric-icon green"><Package size={19} /></span><small>Catalog items</small><strong>{summary.catalog_items}</strong><span className="metric-note">{summary.items_needing_review} need review</span></div><div className="metric-card"><span className="metric-icon yellow"><Bot size={19} /></span><small>Orders today</small><strong>{summary.orders_today}</strong><span className="metric-note">{summary.pending_orders} pending</span></div><div className="metric-card"><span className="metric-status"><i /> {summary.store_status}</span><small>Store status</small><strong>{summary.store_name}</strong><span className="metric-note">/{summary.store_slug}</span></div></div><div className="section-row"><div><h2>Catalog workspace</h2><p className="muted">AI-extracted items waiting for your approval.</p></div><Link className="text-link" href="/dashboard/catalog/rinas-stall/review">Open full review <ArrowRight size={15} /></Link></div><CatalogReviewGrid initialProducts={products} /></>}</main>;
+  const [hello, setHello] = useState("Welcome back");
+  const fresh = useFreshIds(orders);
+  useEffect(() => { apiFetch<Product[]>("/api/v1/dashboard/catalog").then(setProducts).catch(() => undefined); setHello(greeting()); }, []);
+
+  const list = orders || [];
+  const agentOrders = list.filter((order) => order.source === "ai_agent").length;
+  const agentShare = list.length ? Math.round((agentOrders / list.length) * 100) : 0;
+  const live = summary?.store_status === "published";
+
+  return <main className="app-shell"><header className="app-nav"><Link className="brand" href="/"><span className="brand-mark"><Store size={18} /></span>snap-a-store</Link><nav><Link href={`/store/${DEMO_STORE_SLUG}`}>View store <ExternalLink size={12} /></Link><Link className="nav-button" href="/dashboard/catalog/new"><Plus size={15} /> New menu</Link></nav></header>
+    <div className="page-heading"><div><p className="eyebrow">Merchant workspace</p><h1>{hello}{summary ? `, ${summary.store_name}` : ""}.</h1><p className="muted">Your catalog, your storefront, and every PayPal payment, from people and AI agents alike.</p></div><Link className="secondary-button" href="/dashboard/orders">Open orders ledger <ArrowRight size={16} /></Link></div>
+    {error && <div className="error-box">{error}</div>}
+    <div className="metric-grid">
+      <div className="metric-card"><span className="metric-icon blue"><CircleDollarSign size={19} /></span><small>Captured with PayPal</small>{summary ? <strong>{money(summary.total_payment_volume_minor, summary.currency)}</strong> : <div className="skeleton metric-skeleton" />}<span className="metric-note">{summary ? `${summary.paid_orders} paid ${summary.paid_orders === 1 ? "order" : "orders"}` : " "}</span></div>
+      <div className="metric-card"><span className="metric-icon yellow"><Bot size={19} /></span><small>AI agent orders</small>{orders ? <strong>{agentOrders}</strong> : <div className="skeleton metric-skeleton" />}<span className="metric-note">{agentShare}% of all orders</span><div className="channel-bar" aria-label={`${agentShare}% of orders from AI agents`}><i style={{ width: `${agentShare}%` }} /></div></div>
+      <div className="metric-card"><span className="metric-icon green"><Package size={19} /></span><small>Catalog items</small>{summary ? <strong>{summary.catalog_items}</strong> : <div className="skeleton metric-skeleton" />}<span className="metric-note">{summary ? (summary.items_needing_review ? `${summary.items_needing_review} need review` : "All approved") : " "}</span></div>
+      <div className="metric-card"><span className={`metric-status${live ? "" : " draft"}`}><i /> {summary?.store_status || "…"}</span><span className="metric-icon blue"><ShoppingBag size={19} /></span><small>Orders today</small>{summary ? <strong>{summary.orders_today}</strong> : <div className="skeleton metric-skeleton" />}<span className="metric-note">{summary ? `${summary.pending_orders} awaiting payment` : " "}</span></div>
+    </div>
+    <div className="dashboard-columns">
+      <section><div className="section-row"><div><h2>Live catalog</h2><p className="muted">{products.length} active items · AI-extracted, merchant-approved</p></div></div><div className="data-card catalog-snapshot">{!products.length && [0, 1, 2, 3].map((key) => <div className="snapshot-row" key={key}><div className="skeleton" style={{ height: 16, width: "100%" }} /></div>)}{products.map((product) => <div className="snapshot-row" key={product.id}><span className="snapshot-art" aria-hidden="true">{productEmoji(product)}</span><div className="snapshot-name"><strong>{product.name}</strong><small>{product.category}{product.dietary_tags.length ? ` · ${product.dietary_tags.join(", ")}` : ""}</small></div><strong className="snapshot-price">{money(product.price_minor, product.currency)}</strong>{!product.price_minor || product.ai_needs_review ? <span className="status-pill warning">Needs review</span> : <span className="status-pill success">Approved</span>}</div>)}<Link className="snapshot-footer" href="/dashboard/catalog/latest/review">Edit prices & publish <ArrowRight size={15} /></Link></div></section>
+      <section><div className="section-row"><div><h2>Live activity</h2><p className="muted"><span className="online-dot" /> Updates every few seconds</p></div><Link className="text-link" href="/dashboard/orders">All orders <ArrowRight size={15} /></Link></div>
+        <div className="data-card activity-feed">{!orders && [0, 1, 2].map((key) => <div className="activity-row" key={key}><div className="skeleton" style={{ height: 14, width: "100%" }} /></div>)}{list.slice(0, 6).map((order) => <div className={`activity-row${fresh.has(order.id) ? " fresh-row" : ""}`} key={order.id}><div><strong>Order #{order.id}</strong><small>{timeAgo(order.created_at)}</small></div><SourcePill source={order.source} /><span className={`status-pill ${statusTone(order.status)}`}>{order.status}</span><strong className="activity-amount">{money(order.total_minor, order.currency)}</strong></div>)}{orders && !list.length && <div className="empty-state">No orders yet. <Link className="text-link" href={`/store/${DEMO_STORE_SLUG}`}>Open the store</Link> and place one.</div>}</div>
+      </section>
+    </div>
+  </main>;
 }

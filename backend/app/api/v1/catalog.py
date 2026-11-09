@@ -39,7 +39,10 @@ def _image_format_and_dimensions(data: bytes) -> tuple[str, int, int]:
                 continue
             marker = data[cursor + 1]
             cursor += 2
-            if marker in {0xD8, 0xD9}:
+            # SOI/EOI, restart markers, TEM, and fill bytes carry no length field.
+            if marker in {0x01, 0xD8, 0xD9, 0xFF} or 0xD0 <= marker <= 0xD7:
+                if marker == 0xFF:
+                    cursor -= 1
                 continue
             if cursor + 2 > len(data):
                 break
@@ -111,7 +114,11 @@ async def upload_and_extract(
         image_path=str(image_path),
         status="processing",
         provider=settings.vision_provider,
-        model_name=settings.vision_model or "mock-menu-parser",
+        model_name=(
+            settings.groq_model
+            if settings.vision_provider.strip().lower() == "groq"
+            else settings.vision_model or "mock-menu-parser"
+        ),
     )
     db.add(extraction)
     db.commit()
@@ -166,6 +173,9 @@ async def upload_and_extract(
             ],
         }
     except Exception as exc:
+        # Discard any partially applied catalog changes (e.g. deactivated products)
+        # so a failed extraction leaves the current catalog untouched.
+        db.rollback()
         extraction.status = "failed"
         extraction.error_code = type(exc).__name__
         db.commit()

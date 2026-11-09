@@ -16,3 +16,4 @@ backend/uploads/
 .ruff_cache/
 .DS_Store
 
+*.tsbuildinfo

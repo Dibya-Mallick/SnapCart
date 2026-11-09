@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select
+from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
@@ -22,19 +22,33 @@ def get_store_or_404(db: Session, slug: str = "rinas-stall") -> Store:
 def get_summary(db: Session = Depends(get_db), store_slug: str = Query("rinas-stall")) -> DashboardSummary:
     store = get_store_or_404(db, store_slug)
     start_of_day = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
-    products = db.scalars(select(Product).where(Product.store_id == store.id)).all()
-    orders = db.scalars(select(Order).where(Order.store_id == store.id)).all()
-    paid = [order for order in orders if order.status == "paid"]
+    # Aggregate in SQL so the summary stays cheap as the order history grows.
+    catalog_items, items_needing_review = db.execute(
+        select(
+            func.count(Product.id),
+            func.coalesce(func.sum(case((Product.ai_needs_review.is_(True), 1), else_=0)), 0),
+        ).where(Product.store_id == store.id, Product.is_active.is_(True))
+    ).one()
+    orders_today, paid_orders, pending_orders, payment_volume = db.execute(
+        select(
+            func.coalesce(func.sum(case((Order.created_at >= start_of_day, 1), else_=0)), 0),
+            func.coalesce(func.sum(case((Order.status == "paid", 1), else_=0)), 0),
+            func.coalesce(func.sum(case((Order.status == "pending", 1), else_=0)), 0),
+            func.coalesce(
+                func.sum(case((Order.status == "paid", Order.total_minor), else_=0)), 0
+            ),
+        ).where(Order.store_id == store.id)
+    ).one()
     return DashboardSummary(
         store_name=store.name,
         store_slug=store.slug,
         store_status=store.status,
-        catalog_items=sum(product.is_active for product in products),
-        items_needing_review=sum(product.ai_needs_review for product in products if product.is_active),
-        orders_today=sum(order.created_at >= start_of_day for order in orders),
-        paid_orders=len(paid),
-        pending_orders=sum(order.status == "pending" for order in orders),
-        total_payment_volume_minor=sum(order.total_minor for order in paid),
+        catalog_items=catalog_items,
+        items_needing_review=items_needing_review,
+        orders_today=orders_today,
+        paid_orders=paid_orders,
+        pending_orders=pending_orders,
+        total_payment_volume_minor=payment_volume,
         currency=store.currency,
     )
 

@@ -9,7 +9,7 @@ from app.schemas.agent import (
     AgentChatResponse,
     AgentPaymentStatusResponse,
 )
-from app.services.shopping_agent_service import ShoppingAgentService
+from app.services.shopping_agent_service import ShoppingAgentService, published_store
 
 router = APIRouter(prefix="/agent", tags=["shopping-agent"])
 agent_service = ShoppingAgentService()
@@ -17,9 +17,9 @@ agent_service = ShoppingAgentService()
 
 @router.get("/stores/{slug}/catalog", response_model=AgentCatalogResponse)
 def list_store_catalog(slug: str, db: Session = Depends(get_db)) -> AgentCatalogResponse:
+    store = published_store(db, slug)
     products = agent_service.list_store_catalog(db, slug)
-    store_currency = products[0].currency if products else "USD"
-    return AgentCatalogResponse(store_slug=slug, currency=store_currency, products=products)
+    return AgentCatalogResponse(store_slug=slug, currency=store.currency, products=products)
 
 
 @router.post("/stores/{slug}/cart", response_model=AgentChatResponse)
@@ -49,7 +49,16 @@ def check_order_payment_status(
 
 @router.post("/chat", response_model=AgentChatResponse)
 def chat(payload: AgentChatRequest, db: Session = Depends(get_db)) -> AgentChatResponse:
-    status, message, tool_calls, order = agent_service.orchestrate_message(
-        db, payload.store_slug, payload.message
+    outcome = agent_service.orchestrate_message(
+        db,
+        payload.store_slug,
+        payload.message,
+        [turn.model_dump() for turn in payload.history],
     )
-    return AgentChatResponse(status=status, message=message, tool_calls=tool_calls, order=order)
+    return AgentChatResponse(
+        status=outcome.status,
+        message=outcome.message,
+        tool_calls=outcome.tool_calls,
+        order=outcome.order,
+        planner=outcome.planner,
+    )

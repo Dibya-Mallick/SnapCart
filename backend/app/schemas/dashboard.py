@@ -13,6 +13,7 @@ class ProductResponse(BaseModel):
     currency: str
     category: str
     dietary_tags: list[str]
+    source_text: str
     ai_needs_review: bool
     is_active: bool
 

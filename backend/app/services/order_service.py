@@ -44,8 +44,10 @@ def create_validated_order(
     db.flush()
 
     subtotal_minor = 0
-    for item in items:
-        product = products_by_id[item.product_id]
+    # Iterate merged quantities so a product listed twice yields one line, not two
+    # lines that each carry the combined quantity.
+    for product_id in product_ids:
+        product = products_by_id[product_id]
         if product.price_minor is None or product.price_minor <= 0:
             raise HTTPException(
                 status_code=422,

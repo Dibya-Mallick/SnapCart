@@ -2,20 +2,38 @@
 
 from __future__ import annotations
 
+import logging
 import re
-from collections import defaultdict
+from collections import Counter, defaultdict
+from dataclasses import dataclass
 from decimal import Decimal
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.models import Order, Product, Store
 from app.schemas.agent import AgentToolCall
 from app.schemas.orders import CartItemInput, PendingOrderResponse
 from app.schemas.storefront import PublicProductResponse
+from app.services.groq_client import LLMError
 from app.services.order_service import create_validated_order
+
+logger = logging.getLogger(__name__)
+
+RULES_PLANNER = "rules"
+
+
+@dataclass(frozen=True)
+class AgentOutcome:
+    status: Literal["cart_prepared", "needs_clarification"]
+    message: str
+    tool_calls: list[AgentToolCall]
+    order: PendingOrderResponse | None
+    # Which planner produced the reply, e.g. "rules" or "groq:qwen/qwen3.8-27b".
+    planner: str
 
 NUMBER_WORDS = {
     "a": 1,
@@ -33,7 +51,7 @@ NUMBER_WORDS = {
 }
 
 
-def _published_store(db: Session, store_slug: str) -> Store:
+def published_store(db: Session, store_slug: str) -> Store:
     store = db.scalar(select(Store).where(Store.slug == store_slug, Store.status == "published"))
     if not store:
         raise HTTPException(status_code=404, detail="Store not found")
@@ -84,7 +102,7 @@ class ShoppingAgentService:
     """Expose only catalog lookup, cart preparation, and payment-status tools."""
 
     def list_store_catalog(self, db: Session, store_slug: str) -> list[PublicProductResponse]:
-        store = _published_store(db, store_slug)
+        store = published_store(db, store_slug)
         return [_product_response(product) for product in _public_products(db, store)]
 
     def build_validated_cart(
@@ -93,14 +111,14 @@ class ShoppingAgentService:
         store_slug: str,
         items: list[CartItemInput],
     ) -> PendingOrderResponse:
-        store = _published_store(db, store_slug)
+        store = published_store(db, store_slug)
         order = create_validated_order(db, store, items, source="ai_agent")
         return _order_response(order, store.slug)
 
     def check_order_payment_status(
         self, db: Session, store_slug: str, local_order_id: int
     ) -> dict[str, Any]:
-        store = _published_store(db, store_slug)
+        store = published_store(db, store_slug)
         order = db.scalar(
             select(Order).where(Order.id == local_order_id, Order.store_id == store.id)
         )
@@ -115,13 +133,30 @@ class ShoppingAgentService:
         }
 
     def orchestrate_message(
-        self, db: Session, store_slug: str, message: str
-    ) -> tuple[str, str, list[AgentToolCall], PendingOrderResponse | None]:
-        """Run a bounded local orchestration loop.
+        self,
+        db: Session,
+        store_slug: str,
+        message: str,
+        history: list[dict[str, str]] | None = None,
+    ) -> AgentOutcome:
+        """Plan a reply with the configured LLM, falling back to deterministic rules.
 
-        This deterministic provider keeps the tool contract usable without an AI key.
-        A model-backed planner can later call these same three methods.
+        Both planners can only call the three bounded tools above, so neither can
+        set prices or move money; the shopper still approves payment in PayPal.
         """
+        published_store(db, store_slug)
+        if settings.llm_provider.strip().lower() == "groq" and settings.groq_enabled:
+            # Imported here to avoid a circular import: the LLM planner uses this service.
+            from app.services.llm_shopping_agent import run_llm_agent
+
+            try:
+                return run_llm_agent(self, db, store_slug, message, history or [])
+            except LLMError:
+                logger.exception("LLM shopping agent failed; falling back to rule-based planner")
+        return self._orchestrate_with_rules(db, store_slug, message)
+
+    def _orchestrate_with_rules(self, db: Session, store_slug: str, message: str) -> AgentOutcome:
+        """Deterministic keyword planner that keeps the agent usable without an AI key."""
         catalog = self.list_store_catalog(db, store_slug)
         catalog_result = {"store_slug": store_slug, "products": [item.model_dump() for item in catalog]}
         tool_calls = [
@@ -133,11 +168,12 @@ class ShoppingAgentService:
         ]
         selected = _select_items(message, catalog)
         if not selected:
-            return (
-                "needs_clarification",
-                "I could not match that request to the published menu. Please name an item, category, or dietary preference.",
-                tool_calls,
-                None,
+            return AgentOutcome(
+                status="needs_clarification",
+                message="I could not match that request to the published menu. Please name an item, category, or dietary preference.",
+                tool_calls=tool_calls,
+                order=None,
+                planner=RULES_PLANNER,
             )
 
         items = [
@@ -153,25 +189,30 @@ class ShoppingAgentService:
             )
         )
         item_summary = ", ".join(f"{item.quantity}× {item.product_name}" for item in order.items)
-        return (
-            "cart_prepared",
-            (
+        return AgentOutcome(
+            status="cart_prepared",
+            message=(
                 f"I prepared a pending order for {item_summary}. The server-calculated total is "
                 f"{order.currency} {Decimal(order.total_minor) / Decimal(100):.2f}. "
                 "Please review and approve payment."
             ),
-            tool_calls,
-            order,
+            tool_calls=tool_calls,
+            order=order,
+            planner=RULES_PLANNER,
         )
 
 
 def _singular(token: str) -> str:
     token = token.lower().strip(".,!?;:")
-    if token.endswith("ies"):
+    if len(token) <= 3:
+        return token
+    if token.endswith("ies") and len(token) > 4:  # berries -> berry, but pies -> pie
         return token[:-3] + "y"
-    if token.endswith("es"):
+    # "-es" is only a plural suffix after sibilants or "o" (dishes, mangoes);
+    # elsewhere it belongs to the stem (bites -> bite, not bit).
+    if token.endswith(("sses", "xes", "zes", "ches", "shes", "oes")):
         return token[:-2]
-    if token.endswith("s"):
+    if token.endswith("s") and not token.endswith(("ss", "us")):
         return token[:-1]
     return token
 
@@ -181,6 +222,11 @@ def _name_matches(product_name: str, message: str) -> bool:
     core_name = product_name.split("(", 1)[0]
     name_words = [_singular(word) for word in re.findall(r"[a-z]+", core_name.lower())]
     return all(word in message_words for word in name_words)
+
+
+def _head_word(product_name: str) -> str:
+    words = re.findall(r"[a-z]+", product_name.split("(", 1)[0].lower())
+    return _singular(words[-1]) if words else ""
 
 
 def _quantity_before(message: str, anchor: str) -> int:
@@ -201,27 +247,32 @@ def _select_items(message: str, catalog: list[PublicProductResponse]) -> dict[in
     lower_message = message.lower()
     selected: dict[int, int] = defaultdict(int)
 
+    # Shoppers often use just the head noun ("two samosas" for "Vegetable Samosa"), so fall
+    # back to a product's last name word when no other product shares it.
+    head_counts = Counter(_head_word(product.name) for product in catalog)
+    message_tokens = {_singular(word) for word in re.findall(r"[a-z]+", lower_message)}
     for product in catalog:
+        head = _head_word(product.name)
         if _name_matches(product.name, lower_message):
             selected[product.id] += _quantity_before(lower_message, product.name)
+        elif head and head_counts[head] == 1 and head in message_tokens:
+            selected[product.id] += _quantity_before(lower_message, head)
 
     requested_tags = [
         tag
         for tag in {tag for product in catalog for tag in product.dietary_tags}
         if tag in lower_message
     ]
-    category_aliases = {
-        "snack": "snacks",
-        "snacks": "snacks",
-        "drink": "drinks",
-        "drinks": "drinks",
-        "main": "mains",
-        "mains": "mains",
-    }
-    for alias, category in category_aliases.items():
-        if not re.search(rf"\b{alias}\b", lower_message):
+    # Categories come from the live catalog, so merchant-defined ones work too.
+    message_words = {_singular(word) for word in re.findall(r"[a-z]+", lower_message)}
+    for category in sorted({product.category.lower() for product in catalog} - {"other"}):
+        alias = _singular(category)
+        if alias not in message_words:
             continue
         eligible = [product for product in catalog if product.category.lower() == category]
+        if any(product.id in selected for product in eligible):
+            # The shopper already named a specific item from this category.
+            continue
         tagged = [
             product for product in eligible if all(tag in product.dietary_tags for tag in requested_tags)
         ]

@@ -1,5 +1,7 @@
-"""Vision extraction boundary with mock and Gemini providers."""
+"""Vision extraction boundary with mock, Groq, and Gemini providers."""
 
+import base64
+import json
 from pathlib import Path
 
 from pydantic import BaseModel, Field, field_validator
@@ -73,6 +75,62 @@ def _extract_with_gemini(image_path: Path, model_name: str) -> ExtractionResult:
     return ExtractionResult.model_validate_json(response.text)
 
 
+GROQ_JSON_SHAPE = """
+Respond with a single JSON object of this exact shape and nothing else:
+{"items": [{"name": str, "description": str, "price": str or null, "currency": "USD",
+"category": str, "dietary_tags": [str], "source_text": str, "needs_review": bool,
+"warnings": [str]}], "overall_warnings": [str]}
+Use short title-case categories such as "Snacks", "Mains", "Drinks", or "Desserts".
+Only add a dietary tag (e.g. "vegetarian", "vegan", "dairy-free") when it is clearly implied.
+""".strip()
+
+MIME_TYPES = {".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp"}
+
+
+def _extract_with_groq(image_path: Path) -> ExtractionResult:
+    # Imported lazily so the mock provider never depends on network configuration.
+    from app.services.groq_client import chat_completion
+
+    mime_type = MIME_TYPES.get(image_path.suffix.lower())
+    if not mime_type:
+        raise RuntimeError("unsupported image type for Groq")
+    image_b64 = base64.b64encode(image_path.read_bytes()).decode()
+    message = chat_completion(
+        [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": f"{VISION_PROMPT}\n\n{GROQ_JSON_SHAPE}"},
+                    {"type": "image_url", "image_url": {"url": f"data:{mime_type};base64,{image_b64}"}},
+                ],
+            }
+        ],
+        json_mode=True,
+        temperature=0.1,
+        max_tokens=4096,
+        timeout=90.0,
+    )
+    raw = json.loads(message.get("content") or "{}")
+    # Drop unnamed rows and repair odd currency codes rather than failing the whole menu.
+    items = []
+    for item in raw.get("items") or []:
+        if not isinstance(item, dict) or not str(item.get("name") or "").strip():
+            continue
+        currency = str(item.get("currency") or "USD").strip().upper()
+        item["currency"] = currency if len(currency) == 3 and currency.isalpha() else "USD"
+        if item.get("price") is not None:
+            item["price"] = str(item["price"])
+        items.append(item)
+    result = ExtractionResult.model_validate(
+        {"items": items, "overall_warnings": raw.get("overall_warnings") or []}
+    )
+    # A row without a readable price can never be published, so always flag it.
+    for item in result.items:
+        if item.price is None:
+            item.needs_review = True
+    return result
+
+
 def extract_menu(image_path: Path, provider: str = "mock", model_name: str = "") -> ExtractionResult:
     """Extract a menu using the configured provider.
 
@@ -82,6 +140,8 @@ def extract_menu(image_path: Path, provider: str = "mock", model_name: str = "")
     if not image_path.exists():
         raise ValueError("uploaded image is missing")
     provider = provider.strip().lower()
+    if provider == "groq":
+        return _extract_with_groq(image_path)
     if provider == "gemini":
         return _extract_with_gemini(image_path, model_name or "gemini-3.8-flash")
     if provider != "mock":
