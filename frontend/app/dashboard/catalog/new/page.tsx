@@ -2,7 +2,8 @@
 
 import { DragEvent, FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, ArrowLeft, ArrowRight, Camera, Check, ImageUp, ScanText, Sparkles, Store } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowRight, Camera, Check, ImageUp, ScanText, Sparkles } from "lucide-react";
+import { BrandLogo } from "../../../../components/BrandLogo";
 import { API_URL, DEMO_STORE_SLUG, money } from "../../../../lib/api";
 
 type ExtractionResult = { extraction_id: number; overall_warnings: string[]; products: { id: number; name: string; price_minor: number | null; currency: string; needs_review: boolean }[] };
@@ -62,7 +63,7 @@ export default function NewCatalogPage() {
 
   const needsReview = result ? result.products.filter((p) => p.needs_review).length : 0;
 
-  return <main className="app-shell"><header className="app-nav"><Link className="brand" href="/dashboard"><span className="brand-mark"><Store size={18} /></span>snap-a-store</Link><Link className="text-link" href="/dashboard"><ArrowLeft size={15} /> Back to dashboard</Link></header>
+  return <main className="app-shell"><header className="app-nav"><Link className="brand" href="/dashboard"><span className="brand-mark"><BrandLogo size={34} /></span>SnapCart</Link><Link className="text-link" href="/dashboard"><ArrowLeft size={15} /> Back to dashboard</Link></header>
     <div className="narrow-page"><p className="eyebrow">Step 1 · Create a catalog</p><h1>Snap your menu.</h1><p className="lead">Upload a photo of your menu board or printed menu. AI turns it into products and prices you can review before anything goes live.</p>
       <form className="upload-card" onSubmit={submit}>
         <label className={`dropzone${dragging ? " dragging" : ""}${preview ? " has-preview" : ""}`} onDragOver={(e) => { e.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={drop}>

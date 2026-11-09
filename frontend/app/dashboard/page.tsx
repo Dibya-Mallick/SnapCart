@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Bot, CircleDollarSign, ExternalLink, Package, Plus, ShoppingBag, Store } from "lucide-react";
+import { ArrowRight, Bot, CircleDollarSign, ExternalLink, Package, Plus, ShoppingBag } from "lucide-react";
+import { BrandLogo } from "../../components/BrandLogo";
 import { apiFetch, DashboardSummary, DEMO_STORE_SLUG, LedgerOrder, money, Product, productEmoji, timeAgo } from "../../lib/api";
 import { useLiveData } from "../../lib/useLiveData";
 import { SourcePill, statusTone, useFreshIds } from "../../components/dashboard/OrdersLedgerGrid";
@@ -25,7 +26,7 @@ export default function DashboardPage() {
   const agentShare = list.length ? Math.round((agentOrders / list.length) * 100) : 0;
   const live = summary?.store_status === "published";
 
-  return <main className="app-shell"><header className="app-nav"><Link className="brand" href="/"><span className="brand-mark"><Store size={18} /></span>snap-a-store</Link><nav><Link href={`/store/${DEMO_STORE_SLUG}`}>View store <ExternalLink size={12} /></Link><Link className="nav-button" href="/dashboard/catalog/new"><Plus size={15} /> New menu</Link></nav></header>
+  return <main className="app-shell"><header className="app-nav"><Link className="brand" href="/"><span className="brand-mark"><BrandLogo size={34} /></span>SnapCart</Link><nav><Link href={`/store/${DEMO_STORE_SLUG}`}>View store <ExternalLink size={12} /></Link><Link className="nav-button" href="/dashboard/catalog/new"><Plus size={15} /> New menu</Link></nav></header>
     <div className="page-heading"><div><p className="eyebrow">Merchant workspace</p><h1>{hello}{summary ? `, ${summary.store_name}` : ""}.</h1><p className="muted">Your catalog, your storefront, and every PayPal payment, from people and AI agents alike.</p></div><Link className="secondary-button" href="/dashboard/orders">Open orders ledger <ArrowRight size={16} /></Link></div>
     {error && <div className="error-box">{error}</div>}
     <div className="metric-grid">

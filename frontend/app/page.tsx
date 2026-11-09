@@ -1,4 +1,5 @@
-import { ArrowRight, Bot, Camera, Check, CircleDollarSign, Store } from "lucide-react";
+import { ArrowRight, Bot, Camera, Check, CircleDollarSign } from "lucide-react";
+import { BrandLogo } from "../components/BrandLogo";
 
 const features = [
   { icon: Camera, title: "Snap your menu", text: "AI turns a menu photo into structured products and prices." },
@@ -10,9 +11,9 @@ export default function Home() {
   return (
     <main>
       <nav className="nav shell">
-        <a className="brand" href="/" aria-label="Snap-a-Store home">
-          <span className="brand-mark"><Store size={19} strokeWidth={2.5} /></span>
-          <span>snap-a-store</span>
+        <a className="brand" href="/" aria-label="SnapCart home">
+          <span className="brand-mark"><BrandLogo size={34} /></span>
+          <span>SnapCart</span>
         </a>
         <div className="nav-links">
           <a href="#how-it-works">How it works</a>
@@ -53,7 +54,7 @@ export default function Home() {
       </section>
 
       <section className="payment-strip shell" id="payments"><div><span className="payment-mark">P</span><b>Payments your customers already trust.</b><p>Explicit buyer approval. Server-verified capture. PayPal Sandbox ready.</p></div><a href="/dashboard">Get started <ArrowRight size={17} /></a></section>
-      <footer className="shell footer"><span>© 2026 Snap-a-Store</span><span>Built for micro-merchants · PayPal Sandbox demo</span></footer>
+      <footer className="shell footer"><span>© 2026 SnapCart</span><span>Built for micro-merchants · PayPal Sandbox demo</span></footer>
     </main>
   );
 }

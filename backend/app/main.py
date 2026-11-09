@@ -32,7 +32,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         yield
 
 
-app = FastAPI(title="Snap-a-Store API", version="0.2.0", lifespan=lifespan)
+app = FastAPI(title="SnapCart API", version="0.2.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origin_list,
@@ -47,7 +47,7 @@ app.include_router(api_router, prefix="/api/v1")
 def health() -> dict[str, object]:
     return {
         "status": "ok",
-        "service": "snap-a-store-api",
+        "service": "snapcart-api",
         "ai": {
             "llm": settings.groq_model
             if settings.groq_enabled and settings.llm_provider == "groq"

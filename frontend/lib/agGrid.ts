@@ -4,7 +4,7 @@ import { AllCommunityModule, ModuleRegistry, themeQuartz } from "ag-grid-communi
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
-/** AG Grid theme tuned to the Snap-a-Store / PayPal palette. */
+/** AG Grid theme tuned to the SnapCart / PayPal palette. */
 export const gridTheme = themeQuartz.withParams({
   accentColor: "#0070ba",
   fontFamily: "inherit",

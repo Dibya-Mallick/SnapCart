@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Check, Rocket, Store } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Rocket } from "lucide-react";
+import { BrandLogo } from "../../../../../components/BrandLogo";
 import { apiFetch, DashboardSummary, DEMO_STORE_SLUG, Product } from "../../../../../lib/api";
 import { CatalogReviewGrid, ReviewState } from "../../../../../components/catalog/CatalogReviewGrid";
 
@@ -41,7 +42,7 @@ export default function CatalogReviewPage() {
   const ready = !loading && review.total > 0 && review.needsReview === 0 && review.unsaved === 0;
   const blocker = loading ? "Loading catalog…" : !review.total ? "Add at least one item" : review.unsaved ? `Approve ${review.unsaved} edited ${review.unsaved === 1 ? "row" : "rows"} first` : review.needsReview ? `Review ${review.needsReview} flagged ${review.needsReview === 1 ? "item" : "items"} first` : "Ready to go live";
 
-  return <main className="app-shell"><header className="app-nav"><Link className="brand" href="/dashboard"><span className="brand-mark"><Store size={18} /></span>snap-a-store</Link><Link className="text-link" href="/dashboard"><ArrowLeft size={15} /> Dashboard</Link></header>
+  return <main className="app-shell"><header className="app-nav"><Link className="brand" href="/dashboard"><span className="brand-mark"><BrandLogo size={34} /></span>SnapCart</Link><Link className="text-link" href="/dashboard"><ArrowLeft size={15} /> Dashboard</Link></header>
     <div className="page-heading"><div><p className="eyebrow">Step 2 · Human-in-the-loop review</p><h1>Review your catalog.</h1><p className="muted">AI drafts the catalog, you stay in control. Nothing reaches shoppers until every active item is approved.</p></div></div>
     <div className={`publish-bar${storeStatus === "published" ? " live" : ""}`}>
       <div className="publish-progress"><strong>{storeStatus === "published" && !review.unsaved ? <><Check size={16} /> Store is live</> : blocker}</strong><span className="muted">{review.total - review.needsReview} of {review.total} items approved · store is {storeStatus || "…"}</span><div className="progress-track"><i style={{ width: `${review.total ? ((review.total - review.needsReview) / review.total) * 100 : 0}%` }} /></div></div>

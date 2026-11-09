@@ -1,6 +1,6 @@
-# Snap-a-Store build log
+# SnapCart build log
 
-Snap-a-Store turns a menu photo into a reviewed catalog, a mobile storefront, and an agent-ready ordering node with PayPal Sandbox checkout.
+SnapCart turns a menu photo into a reviewed catalog, a mobile storefront, and an agent-ready ordering node with PayPal Sandbox checkout.
 
 ## Repository layout
 

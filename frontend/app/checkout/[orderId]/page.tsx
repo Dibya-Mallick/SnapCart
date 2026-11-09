@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { Bot, Lock, ShoppingBag, Store } from "lucide-react";
+import { Bot, Lock, ShoppingBag } from "lucide-react";
+import { BrandLogo } from "../../../components/BrandLogo";
 import { apiFetch, PendingOrder } from "../../../lib/api";
 import { OrderLines, PaymentReceipt } from "../../../components/checkout/OrderSummary";
 import { PayPalCheckoutButton } from "../../../components/checkout/PayPalCheckoutButton";
@@ -33,7 +34,7 @@ export default function CheckoutLinkPage() {
   else content = <><div className="order-badge">{fromAgent ? <><Bot size={13} /> Prepared by an AI agent on your behalf</> : <><ShoppingBag size={13} /> Web order</>} · Order #{order.local_order_id}</div><OrderLines order={order} /><p className="trust-note"><Lock size={12} /> {fromAgent ? "The agent chose the items, but the store's server set every price. Nothing is charged until you approve in PayPal." : "Prices were set by the store's server. Nothing is charged until you approve in PayPal."}</p><PayPalCheckoutButton order={order} onPaid={(captureId) => setOrder({ ...order, status: "paid", paypal_capture_id: captureId })} /></>;
 
   return <main className="center-page checkout-link-page"><div className="checkout-link-card">
-    <div className="checkout-link-header"><span className="brand-mark"><Store size={18} /></span><div><p className="eyebrow">Approve your order</p><h1>{storeName || "Snap-a-Store checkout"}</h1></div></div>
+    <div className="checkout-link-header"><span className="brand-mark"><BrandLogo size={34} /></span><div><p className="eyebrow">Approve your order</p><h1>{storeName || "SnapCart checkout"}</h1></div></div>
     <div className="cart-card">{content}</div>
     {order && <Link className="text-link center-link" href={`/store/${order.store_slug}`}>Visit the store</Link>}
   </div></main>;

@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { Bot, Lock, Pencil, ShieldCheck, ShoppingBag, Store } from "lucide-react";
+import { Bot, Lock, Pencil, ShieldCheck, ShoppingBag } from "lucide-react";
+import { BrandLogo } from "../../../components/BrandLogo";
 import { apiFetch, CartItem, money, PendingOrder, Product } from "../../../lib/api";
 import { PayPalCheckoutButton } from "../../../components/checkout/PayPalCheckoutButton";
 import { OrderLines, PaymentReceipt } from "../../../components/checkout/OrderSummary";
@@ -75,7 +76,7 @@ export default function StorePage() {
   }
 
   return <main className="store-page">
-    <header className="store-nav"><Link className="brand" href="/"><span className="brand-mark"><Store size={18} /></span>snap-a-store</Link><span className="live-badge"><i /> Live store</span><span className="store-nav-spacer" /><Link href="/dashboard">Merchant dashboard</Link></header>
+    <header className="store-nav"><Link className="brand" href="/"><span className="brand-mark"><BrandLogo size={34} /></span>SnapCart</Link><span className="live-badge"><i /> Live store</span><span className="store-nav-spacer" /><Link href="/dashboard">Merchant dashboard</Link></header>
     {error ? <div className="store-error">{error}</div> : <>
       <section className="store-hero"><div><span className="eyebrow">Order online · Pay with PayPal</span>{storeName ? <h1>{storeName}</h1> : <div className="skeleton skeleton-on-dark" style={{ width: 260, height: 44, marginBottom: 12 }} />}<p>Order straight from the menu, or tell the AI assistant what you want. Either way you approve the payment in PayPal.</p><div className="hero-pills"><span><ShieldCheck size={13} /> Server-verified prices</span><span><Bot size={13} /> Agent-ready</span></div></div><div className="store-hero-mark">{storeName ? storeName.slice(0, 1) : ""}</div></section>
       <div className="store-layout">

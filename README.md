@@ -1,8 +1,8 @@
-# Snap-a-Store
+# SnapCart
 
 **Turn a photo of a paper menu into a PayPal-ready store that people *and* AI agents can shop, in minutes.**
 
-Millions of micro-merchants (street-food stalls, tea corners, home kitchens) have no website and no structured catalog, so neither online shoppers nor AI shopping agents can buy from them. Snap-a-Store closes that gap:
+Millions of micro-merchants (street-food stalls, tea corners, home kitchens) have no website and no structured catalog, so neither online shoppers nor AI shopping agents can buy from them. SnapCart closes that gap:
 
 1. **Snap**: the merchant photographs their menu. A vision LLM extracts products, prices, categories, and dietary tags, and flags anything it can't read.
 2. **Review**: the merchant sees exactly what the AI read, fixes flagged items in an AG Grid, and publishes. Nothing goes live until every item is approved.
@@ -77,10 +77,10 @@ The API serves an MCP endpoint at `http://localhost:8000/mcp` (streamable HTTP) 
 ```json
 {
   "mcpServers": {
-    "snap-a-store": {
-      "command": "/absolute/path/to/Snap-a-Store/backend/.venv/bin/python",
+    "snapcart": {
+      "command": "/absolute/path/to/SnapCart/backend/.venv/bin/python",
       "args": ["-m", "app.mcp_server"],
-      "cwd": "/absolute/path/to/Snap-a-Store/backend"
+      "cwd": "/absolute/path/to/SnapCart/backend"
     }
   }
 }
@@ -88,11 +88,11 @@ The API serves an MCP endpoint at `http://localhost:8000/mcp` (streamable HTTP) 
 
 On Windows use `backend\\.venv\\Scripts\\python.exe`. Clients that support remote MCP servers can connect straight to the `/mcp` URL instead.
 
-Try: *"Find a tea stall on Snap-a-Store and order two milk teas and a snack under $3 for me."* The agent builds the cart and returns a checkout link; open it and approve in PayPal; the order appears in the merchant ledger as an **AI agent** order.
+Try: *"Find a tea stall on SnapCart and order two milk teas and a snack under $3 for me."* The agent builds the cart and returns a checkout link; open it and approve in PayPal; the order appears in the merchant ledger as an **AI agent** order.
 
 ## Deploy to Render
 
-Click **New → Blueprint** in Render and point it at this repo. [render.yaml](render.yaml) creates `snap-a-store-api` and `snap-a-store-web`. Then set:
+Click **New → Blueprint** in Render and point it at this repo. [render.yaml](render.yaml) creates `snapcart-api` and `snapcart-web`. Then set:
 
 - API: `GROQ_API_KEY`, `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PUBLIC_APP_URL` and `CORS_ORIGINS` (the web service URL).
 - Web: `NEXT_PUBLIC_API_URL` (the API URL) and `NEXT_PUBLIC_PAYPAL_CLIENT_ID`, then redeploy so the build picks them up.

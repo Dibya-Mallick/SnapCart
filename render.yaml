@@ -3,7 +3,7 @@
 # service's onrender.com address, and add your Groq and PayPal sandbox keys.
 services:
   - type: web
-    name: snap-a-store-api
+    name: snapcart-api
     runtime: python
     rootDir: backend
     plan: free
@@ -27,14 +27,14 @@ services:
         sync: false
       - key: PAYPAL_CLIENT_SECRET
         sync: false
-      # e.g. https://snap-a-store-web.onrender.com
+      # e.g. https://snapcart-web.onrender.com
       - key: PUBLIC_APP_URL
         sync: false
       - key: CORS_ORIGINS
         sync: false
 
   - type: web
-    name: snap-a-store-web
+    name: snapcart-web
     runtime: node
     rootDir: frontend
     plan: free
@@ -43,7 +43,7 @@ services:
     envVars:
       - key: NODE_VERSION
         value: 22.11.0
-      # e.g. https://snap-a-store-api.onrender.com (read at build time)
+      # e.g. https://snapcart-api.onrender.com (read at build time)
       - key: NEXT_PUBLIC_API_URL
         sync: false
       - key: NEXT_PUBLIC_PAYPAL_CLIENT_ID
